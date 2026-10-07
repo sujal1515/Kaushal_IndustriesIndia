@@ -1,0 +1,34 @@
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+/** Kaushal "KI" mark, traced to a vector from the original logo artwork. */
+export const MARK_VIEWBOX = "0 0 78.00 121.12";
+export const MARK_PATH =
+  "M65.25 0.00 L63.38 1.75 L57.62 9.25 L54.50 14.12 L50.12 22.38 L47.12 29.62 L44.25 39.25 L42.75 47.00 L41.88 55.50 L41.88 64.88 L42.50 71.75 L44.12 80.62 L45.75 86.75 L48.75 95.00 L52.25 102.38 L56.38 109.38 L62.38 117.50 L65.25 120.75 L66.00 121.00 L66.25 120.62 L66.25 119.75 L65.75 117.25 L65.25 112.12 L65.12 103.62 L65.50 98.25 L66.50 91.25 L68.38 83.12 L70.62 76.50 L73.50 69.75 L75.38 66.12 L77.88 62.00 L77.88 61.38 L77.12 61.38 L76.12 62.00 L71.62 65.62 L68.38 68.88 L65.75 72.12 L63.62 75.25 L61.25 79.62 L59.62 83.50 L58.00 89.25 L57.50 89.75 L57.12 89.62 L56.50 88.12 L55.62 82.25 L54.38 69.38 L54.12 58.88 L54.62 47.50 L56.12 34.88 L58.25 23.88 L61.50 12.00 L63.50 6.00 L65.50 1.00 L65.62 0.12Z M0.00 0.00 L0.00 0.88 L2.88 8.38 L5.12 15.50 L8.25 28.25 L10.25 40.50 L11.00 47.75 L11.38 54.75 L11.38 65.62 L11.00 72.75 L10.00 82.00 L9.12 87.50 L7.38 96.25 L5.38 104.12 L2.88 112.12 L0.00 119.62 L0.00 120.38 L0.62 120.38 L1.88 119.12 L5.00 115.25 L9.12 109.50 L12.62 103.62 L15.62 97.75 L17.12 94.25 L19.25 88.50 L21.00 82.25 L21.62 81.62 L22.38 82.00 L23.00 83.12 L28.25 95.12 L30.25 100.50 L33.00 109.00 L35.00 116.75 L35.38 119.00 L35.62 119.62 L36.25 119.88 L36.88 117.88 L37.25 113.50 L37.38 103.62 L36.88 97.12 L35.88 90.50 L34.12 83.00 L32.00 76.38 L29.25 69.75 L27.38 65.88 L24.88 61.62 L24.38 60.00 L28.38 52.62 L32.00 44.12 L34.12 37.50 L35.75 30.62 L36.88 23.38 L37.38 17.00 L37.38 9.50 L36.62 1.38 L36.25 0.62 L35.88 0.62 L35.50 1.12 L33.00 11.50 L30.38 19.62 L28.25 25.38 L25.12 32.75 L22.62 38.12 L22.12 38.75 L21.62 38.88 L21.00 38.25 L19.12 31.62 L16.25 24.12 L12.00 15.75 L9.12 11.00 L5.12 5.38 L1.38 0.75 L0.50 0.00Z";
+
+export function Mark({ inverse = false, className }: { inverse?: boolean; className?: string }) {
+  const id = inverse ? "km-grad-inv" : "km-grad";
+  return (
+    <svg viewBox={MARK_VIEWBOX} aria-hidden focusable="false" className={cn("h-9 w-auto", className)}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={inverse ? "#ffffff" : "#072768"} />
+          <stop offset="100%" stopColor={inverse ? "#e2c7ae" : "#5079b2"} />
+        </linearGradient>
+      </defs>
+      <path fill={`url(#${id})`} fillRule="evenodd" d={MARK_PATH} />
+    </svg>
+  );
+}
+
+export function Logo({ inverse = false, className }: { inverse?: boolean; className?: string }) {
+  return (
+    <Link href="/" className={cn("group flex items-center gap-3", className)} aria-label="Kaushal Industries — home">
+      <Mark inverse={inverse} className="transition-transform duration-500 ease-[var(--ease-soft)] group-hover:-rotate-6 group-hover:scale-105" />
+      <span className="flex items-baseline gap-1.5 whitespace-nowrap text-[1.12rem] leading-none tracking-[-0.03em]">
+        <span className={cn("font-semibold", inverse ? "text-white" : "text-ink")}>Kaushal</span>
+        <span className={cn("font-normal", inverse ? "text-white/60" : "text-muted")}>Industries</span>
+      </span>
+    </Link>
+  );
+}
