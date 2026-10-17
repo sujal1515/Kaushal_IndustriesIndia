@@ -547,8 +547,11 @@
   .hh-product-blend {
     position: absolute;
     inset: 0;
-    mix-blend-mode: multiply;
     animation: stage-in 1.3s var(--ease-out) 0.3s both;
+  }
+  /* Photos on white (no prepared cut-out) melt into the surface */
+  .hh-product-blend[data-blend] {
+    mix-blend-mode: multiply;
   }
   .hh-product-zoom {
     position: absolute;

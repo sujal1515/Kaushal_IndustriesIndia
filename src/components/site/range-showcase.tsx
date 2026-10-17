@@ -16,7 +16,8 @@ import {
 import { gsap } from "@/components/motion/gsap";
 import { cn } from "@/lib/utils";
 
-export type ShowcaseLine = { slug: string; name: string; image: string | null };
+/** `cutout`: a transparent product cut-out (otherwise a photo on white, blended into the surface). */
+export type ShowcaseLine = { slug: string; name: string; image: string | null; cutout?: boolean };
 
 /** Handlers that hold the rotation while a mouse is over a part, or keyboard focus is inside it. */
 type HoldHandlers = {
@@ -166,13 +167,15 @@ export function ShowcaseStage({ className }: { className?: string }) {
   }, []);
 
   const current = lines[active];
+  const blend = !lines.every((l) => l.cutout);
   return (
     <div className={className} {...hold}>
       <div className="flex flex-1 items-center justify-center">
         <Link href={`/products/${current.slug}`} aria-label={current.name} className="hh-product group">
-          {/* The multiply blend sits on this outermost wrapper so it always reaches the surface
-              (inner transforms would otherwise isolate it and leave white boxes behind photos). */}
-          <span className="hh-product-blend">
+          {/* Cut-outs sit straight on the surface. Photos on white get a multiply blend, which
+              sits on this outermost wrapper so it always reaches the surface (inner transforms
+              would otherwise isolate it and leave white boxes behind the photos). */}
+          <span className="hh-product-blend" data-blend={blend || undefined}>
             <span className="hh-product-zoom">
               <span ref={floatRef} className="absolute inset-0">
                 {lines.map((l, i) => (
@@ -191,7 +194,8 @@ export function ShowcaseStage({ className }: { className?: string }) {
                         alt=""
                         fill
                         priority={i === 0}
-                        sizes="(min-width: 1200px) 24vw, (min-width: 768px) 40vw, 80vw"
+                        quality={90}
+                        sizes="(min-width: 1200px) 27vw, (min-width: 768px) 45vw, 90vw"
                         className="object-contain"
                       />
                     )}

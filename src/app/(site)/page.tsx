@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -43,7 +45,13 @@ export default async function HomePage() {
     { count: stats.modelCount, from: 0, suffix: "", label: "Published engine models" },
     { text: "ISO 9001:2015", label: "Quality management system" },
   ];
-  const lines = categories.map((c) => ({ slug: c.slug, name: c.name, image: mediaUrl(c.image_path) }));
+  const lines = categories.map((c) => {
+    // Clean, upscaled cut-outs prepared for the hero (scripts/prepare-hero-images.py); any other
+    // category falls back to its catalogue photo.
+    const hero = `/images/hero/${c.slug}.png`;
+    const cutout = existsSync(path.join(process.cwd(), "public", hero));
+    return { slug: c.slug, name: c.name, image: cutout ? hero : mediaUrl(c.image_path), cutout };
+  });
 
   return (
     <>
