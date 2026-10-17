@@ -438,3 +438,68 @@ export async function deleteFaq(id: string, _prev: ActionState): Promise<ActionS
     return "FAQ deleted";
   });
 }
+
+/**
+ * Copy a product — with its models, specification values, images and links — as a new draft.
+ * Handy for families that differ in only a few models or values.
+ */
+export async function duplicateProduct(id: string): Promise<ActionState> {
+  let newId: string | null = null;
+  const result = await runAction(async () => {
+    const { supabase } = await assertRole(CATALOGUE_ROLES);
+    if (!UUID.test(id)) throw new Error("Product not found.");
+    const { data: p, error } = await supabase.from("products").select("*").eq("id", id).single();
+    if (error || !p) throw new Error("Product not found.");
+
+    // A free slug: name-copy, name-copy-2, …
+    const { data: taken } = await supabase.from("products").select("slug").like("slug", `${p.slug}-copy%`);
+    const used = new Set((taken ?? []).map((r) => r.slug as string));
+    let slugCopy = `${p.slug}-copy`;
+    for (let n = 2; used.has(slugCopy); n++) slugCopy = `${p.slug}-copy-${n}`;
+
+    const { id: _id, created_at: _c, updated_at: _u, published_at: _p, search_vector: _s, legacy_path: _l, ...rest } = p;
+    const { data: copy, error: insErr } = await supabase
+      .from("products")
+      .insert({ ...rest, name: `${p.name} (copy)`, slug: slugCopy, status: "draft", is_featured: false })
+      .select("id")
+      .single();
+    dbError(insErr);
+    if (!copy) throw new Error("Could not copy the product.");
+    newId = copy.id as string;
+
+    const [{ data: models }, { data: images }, { data: apps }, { data: related }, { data: res }] = await Promise.all([
+      supabase.from("product_models").select("id, model_code, name, status, sort_order, group_label, model_spec_values(attribute_id, value_text, value_num, value_num_max)").eq("product_id", id),
+      supabase.from("product_images").select("storage_path, alt_text, sort_order, is_primary").eq("product_id", id),
+      supabase.from("product_applications").select("application_id").eq("product_id", id),
+      supabase.from("related_products").select("related_product_id, sort_order").eq("product_id", id),
+      supabase.from("product_resources").select("resource_id").eq("product_id", id),
+    ]);
+
+    for (const m of models ?? []) {
+      const { data: nm, error: mErr } = await supabase
+        .from("product_models")
+        .insert({ product_id: newId, model_code: m.model_code, name: m.name, status: m.status, sort_order: m.sort_order, group_label: m.group_label })
+        .select("id")
+        .single();
+      dbError(mErr);
+      if (!nm) throw new Error("Could not copy a model.");
+      const values = (m.model_spec_values as { attribute_id: string; value_text: string | null; value_num: number | null; value_num_max: number | null }[]) ?? [];
+      if (values.length) {
+        const { error: vErr } = await supabase.from("model_spec_values").insert(values.map((v) => ({ ...v, model_id: nm.id })));
+        dbError(vErr);
+      }
+    }
+    const copies = [
+      images?.length && supabase.from("product_images").insert(images.map((i) => ({ ...i, product_id: newId }))),
+      apps?.length && supabase.from("product_applications").insert(apps.map((a) => ({ ...a, product_id: newId }))),
+      related?.length && supabase.from("related_products").insert(related.filter((r) => r.related_product_id !== newId).map((r) => ({ ...r, product_id: newId }))),
+      res?.length && supabase.from("product_resources").insert(res.map((r) => ({ ...r, product_id: newId }))),
+    ].filter(Boolean);
+    for (const c of await Promise.all(copies)) {
+      if (c && "error" in c) dbError(c.error);
+    }
+    revalidateCatalogue();
+  });
+  if (result.ok && newId) redirect(`/admin/products/${newId}?duplicated=1`);
+  return result;
+}

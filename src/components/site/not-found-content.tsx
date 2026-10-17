@@ -1,15 +1,13 @@
 import Link from "next/link";
+import { getPageContent } from "@/lib/cms/content";
 import { buttonClass } from "@/components/ui/button";
 import { PageHero } from "@/components/ui/primitives";
 import { Search } from "@/components/ui/icons";
 
-export function NotFoundContent() {
+export async function NotFoundContent() {
+  const { hero } = await getPageContent("not-found");
   return (
-    <PageHero
-      eyebrow="404"
-      title="This page has moved or doesn't exist."
-      lead="Our website has a new structure. Search for a product or model code, or start from the product range."
-    >
+    <PageHero eyebrow={hero.eyebrow} title={hero.title} lead={hero.lead}>
       <div className="flex flex-col gap-8">
         <form action="/search" method="get" role="search">
           <label htmlFor="nf-q" className="sr-only">
@@ -21,23 +19,23 @@ export function NotFoundContent() {
               id="nf-q"
               name="q"
               type="search"
-              placeholder="Product or model code"
+              placeholder={hero.placeholder}
               className="form-input !border-white/40 !pl-8 !text-white placeholder:!text-white/60 focus:!border-white"
             />
           </div>
         </form>
         <div className="flex flex-wrap gap-3">
           <Link href="/products" className={buttonClass("inverse", "lg")}>
-            View products
+            {hero.productsButton}
           </Link>
           <Link href="/contact" className={buttonClass("secondary", "lg", "border-white/40 text-white hover:border-white")}>
-            Contact us
+            {hero.contactButton}
           </Link>
         </div>
         <p className="text-[1rem] text-white/80">
-          Looking for a price?{" "}
+          {hero.pricePrompt}{" "}
           <Link href="/request-a-quote" className="u-link text-white">
-            Request a quote
+            {hero.priceLink}
           </Link>
           .
         </p>

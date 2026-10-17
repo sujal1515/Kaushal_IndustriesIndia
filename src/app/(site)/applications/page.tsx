@@ -1,28 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Metadata } from "next";
 import { listApplications } from "@/lib/data/catalogue";
 import { mediaUrl } from "@/lib/env";
-import { pageMetadata } from "@/lib/seo";
+import { cmsMetadata, getPageContent } from "@/lib/cms/content";
+import { fill } from "@/lib/cms/schema";
 import { PageHero } from "@/components/ui/primitives";
 import { Section } from "@/components/ui/system";
 import { ArrowRight } from "@/components/ui/icons";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Applications & Industries",
-  description:
-    "Diesel engines, pumping sets, generating sets and machinery for agriculture, irrigation, power generation, construction and food processing.",
-  path: "/applications",
-});
+export const generateMetadata = () => cmsMetadata("applications", "/applications");
 
 export default async function ApplicationsPage() {
-  const applications = await listApplications();
+  const [applications, c] = await Promise.all([listApplications(), getPageContent("applications")]);
   return (
     <>
       <PageHero
-        eyebrow="Applications & industries"
-        title="Matched to the work it will do."
-        lead="Start from your application and we'll point you to the engines, sets and machines built for it."
+        eyebrow={c.hero.eyebrow}
+        title={c.hero.title}
+        lead={c.hero.lead}
         crumbs={[{ label: "Applications", href: "/applications" }]}
       />
       <Section rule={false} gap="sm">
@@ -48,7 +43,7 @@ export default async function ApplicationsPage() {
               </h2>
               <p className="text-body mt-3 text-muted">{a.summary}</p>
               <span className="mt-auto inline-flex items-center gap-2 pt-6 text-[1rem] font-medium text-accent">
-                Products for {a.name.toLowerCase()}
+                {fill(c.labels.cardLink, { application: a.name.toLowerCase() })}
                 <ArrowRight size={16} className="transition-transform duration-500 ease-[var(--ease-expo)] group-hover:translate-x-1" />
               </span>
             </li>

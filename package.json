@@ -9,7 +9,9 @@
     "lint": "eslint src scripts",
     "typecheck": "tsc --noEmit",
     "db:seed-sql": "node scripts/generate-seed-sql.mts",
-    "test:redirects": "node scripts/test-redirects.mjs"
+    "test:redirects": "node scripts/test-redirects.mjs",
+    "db:seed-cms": "node scripts/generate-cms-seed.mts",
+    "test:db": "node scripts/test-migrations.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -24,6 +26,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -11,6 +11,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { SpecGrid } from "@/components/admin/spec-grid";
 import { ProductImageUpload } from "@/components/admin/uploads";
 import { NoAccess } from "@/components/admin/no-access";
+import { DuplicateProductButton } from "@/components/admin/duplicate-button";
 import { ProductForm } from "../product-form";
 import {
   addProductImage,
@@ -92,14 +93,22 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         }
         description={category.name}
         actions={
-          product.status !== "draft" ? (
-            <Link href={publicPath} target="_blank" className="inline-flex h-9 items-center rounded-lg border border-line-strong bg-surface px-3.5 text-sm font-medium hover:border-ink/40">
-              View on site ↗
-            </Link>
-          ) : null
+          <>
+            <DuplicateProductButton id={product.id} name={product.name} />
+            {product.status !== "draft" && (
+              <Link href={publicPath} target="_blank" className="inline-flex h-9 items-center rounded-lg border border-line-strong bg-surface px-3.5 text-sm font-medium hover:border-ink/40">
+                View on site ↗
+              </Link>
+            )}
+          </>
         }
       />
       {sp.created && <p className="mb-4 rounded-lg bg-accent-soft p-3 text-sm text-accent-strong">Product created. Add models, images and links below.</p>}
+      {sp.duplicated && (
+        <p className="mb-4 rounded-lg bg-accent-soft p-3 text-sm text-accent-strong">
+          This is a draft copy. Rename it, change the web address (slug) and adjust the models before publishing.
+        </p>
+      )}
 
       <nav aria-label="Sections" className="mb-6 flex flex-wrap gap-2 text-sm">
         {[

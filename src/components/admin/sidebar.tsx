@@ -6,20 +6,25 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, Close, Logout, Menu } from "@/components/ui/icons";
 
-export type NavItem = { href: string; label: string; badge?: number };
+export type NavItem = { href: string; label: string; badge?: number; exact?: boolean };
+export type NavGroup = { label?: string; items: NavItem[] };
 
 export function AdminSidebar({
-  items,
+  groups,
   user,
   signOut,
 }: {
-  items: NavItem[];
+  groups: NavGroup[];
   user: { email: string; role: string };
   signOut: () => Promise<void>;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const active = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
+  // The most specific matching item wins (e.g. Pipeline over Enquiries).
+  const all = groups.flatMap((g) => g.items);
+  const matches = all.filter((i) => (i.exact || i.href === "/admin" ? pathname === i.href : pathname === i.href || pathname.startsWith(`${i.href}/`)));
+  const current = matches.sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const active = (href: string) => href === current;
 
   return (
     <>
@@ -41,8 +46,11 @@ export function AdminSidebar({
           </Link>
         </div>
         <nav aria-label="Admin" className="flex-1 overflow-y-auto p-3">
+          {groups.map((g, gi) => (
+          <div key={g.label ?? gi} className={gi ? "mt-5" : undefined}>
+          {g.label && <p className="px-3 pb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-muted">{g.label}</p>}
           <ul className="grid gap-0.5">
-            {items.map((i) => (
+            {g.items.map((i) => (
               <li key={i.href}>
                 <Link
                   href={i.href}
@@ -63,6 +71,8 @@ export function AdminSidebar({
               </li>
             ))}
           </ul>
+          </div>
+          ))}
           <Link href="/" target="_blank" className="mt-4 flex items-center gap-1.5 px-3 py-2 text-sm text-muted hover:text-ink">
             View website <ArrowUpRight size={14} />
           </Link>

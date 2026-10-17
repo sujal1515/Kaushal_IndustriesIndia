@@ -17,7 +17,10 @@ const CYCLE_MS = 3200;
  * swings from Agra to each export region in turn and draws the route. Pointing at a region
  * chip shows that route; the glow follows the pointer across the band.
  */
-export function QualityExport({ regions }: { regions: readonly string[] }) {
+export type QualityCopy = { eyebrow: string; title: string; linkLabel: string; sealText: string };
+export type ExportCopy = { eyebrow: string; body: string; linkLabel: string };
+
+export function QualityExport({ regions, quality, exportBand }: { regions: readonly string[]; quality: QualityCopy; exportBand: ExportCopy }) {
   const root = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
   const [held, setHeld] = useState(false);
@@ -98,18 +101,18 @@ export function QualityExport({ regions }: { regions: readonly string[] }) {
         {/* Quality */}
         <div className="qx-row">
           <div className="qx-visual">
-            <QualitySeal />
+            <QualitySeal text={quality.sealText} />
           </div>
           <div className="flex flex-col items-start">
             <p className="eyebrow !text-sky" data-split>
-              Quality &amp; certifications
+              {quality.eyebrow}
             </p>
             <p className="h3 mt-5 max-w-[34rem]" data-split>
-              ISO 9001:2015 quality management, and up to two years warranty.
+              {quality.title}
             </p>
             <Link href="/quality-certifications" className="case-button group mt-10">
               <ArrowLong className="h-[1.1rem] w-[1.6rem] text-accent transition-transform duration-500 ease-[var(--ease-expo)] group-hover:translate-x-1" />
-              <span className="u-link">Quality, certificates &amp; awards</span>
+              <span className="u-link">{quality.linkLabel}</span>
             </Link>
           </div>
         </div>
@@ -118,9 +121,9 @@ export function QualityExport({ regions }: { regions: readonly string[] }) {
         <div className="qx-row">
           <div className="flex flex-col items-start lg:pl-[8%]">
             <p className="eyebrow !text-sky" data-split>
-              Export markets
+              {exportBand.eyebrow}
             </p>
-            <p className="text-regular mt-5 max-w-[30rem]">Supplying importers, distributors and governments in 60+ countries.</p>
+            <p className="text-regular mt-5 max-w-[30rem]">{exportBand.body}</p>
             <ul className="mt-8 flex max-w-[32rem] flex-wrap gap-2" onPointerLeave={() => setHeld(false)}>
               {regions.map((r, i) => (
                 <li
@@ -137,7 +140,7 @@ export function QualityExport({ regions }: { regions: readonly string[] }) {
               ))}
             </ul>
             <Link href="/export-markets" className="group mt-10 inline-flex items-center gap-2 text-[1.125rem] font-medium">
-              <span className="u-link">Export capability</span>
+              <span className="u-link">{exportBand.linkLabel}</span>
               <ArrowRight size={18} className="transition-transform duration-500 ease-[var(--ease-expo)] group-hover:translate-x-1" />
             </Link>
           </div>
@@ -155,9 +158,8 @@ export function QualityExport({ regions }: { regions: readonly string[] }) {
 /* ------------------------------------------------------------------ */
 
 const TICKS = Array.from({ length: 72 }, (_, i) => i);
-const RING_TEXT = "ISO 9001:2015 · Quality management system · Up to two years warranty · ";
 
-function QualitySeal() {
+function QualitySeal({ text }: { text: string }) {
   const draw = (d: string) => ({ "--d": d }) as React.CSSProperties;
   return (
     <div className="qx-seal relative h-full w-full" aria-hidden>
@@ -191,7 +193,7 @@ function QualitySeal() {
           <g className="qx-seal-spin">
             <text className="qx-ring-text" fill="rgb(247 239 232 / 0.85)">
               <textPath href="#qx-ring" textLength="924" lengthAdjust="spacing">
-                {RING_TEXT.toUpperCase()}
+                {text.toUpperCase()}
               </textPath>
             </text>
           </g>

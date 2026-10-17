@@ -2,33 +2,17 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ENQUIRY_ROLES, hasRole, requireStaff } from "@/lib/admin/auth";
 import { createSessionClient } from "@/lib/supabase/clients";
-import { applyEnquiryFilters, parseFilters } from "@/lib/admin/enquiry-query";
+import { applyEnquiryFilters, applyEnquirySort, parseFilters } from "@/lib/admin/enquiry-query";
+import { LEAD_STATUSES, PRIORITIES, SOURCES } from "@/lib/admin/leads";
 import { countryName } from "@/lib/enquiry/options";
-import { formatDateTime } from "@/lib/utils";
-import { AdminHeader, Input, Pill, Select, Table, adminButton, enquiryTone } from "@/components/admin/ui";
+import { AdminHeader, Input, Select, adminButton } from "@/components/admin/ui";
 import { NoAccess } from "@/components/admin/no-access";
+import { LeadsTable, type LeadRow } from "@/components/admin/leads-table";
+import { requestTime } from "@/lib/admin/dates";
 
 export const metadata: Metadata = { title: "Enquiries" };
 
 const PAGE_SIZE = 25;
-
-type EnquiryRow = {
-  id: string;
-  reference: string;
-  created_at: string;
-  type: string;
-  status: string;
-  name: string;
-  company: string | null;
-  email: string;
-  product_name_snapshot: string | null;
-  model_code_snapshot: string | null;
-  quantity: number | null;
-  quantity_unit: string | null;
-  destination_country: string | null;
-  buyer_country: string | null;
-  notify_error: string | null;
-};
 
 export default async function EnquiriesPage({ searchParams }: PageProps<"/admin/enquiries">) {
   const staff = await requireStaff();
@@ -41,14 +25,23 @@ export default async function EnquiriesPage({ searchParams }: PageProps<"/admin/
   const base = supabase
     .from("enquiries")
     .select(
-      "id, reference, created_at, type, status, name, company, email, product_name_snapshot, model_code_snapshot, quantity, quantity_unit, destination_country, buyer_country, notify_error",
+      "id, reference, created_at, type, status, priority, name, company, email, product_name_snapshot, model_code_snapshot, quantity, quantity_unit, destination_country, buyer_country, notify_error, assigned_to, follow_up_at, estimated_value, currency, tags",
       { count: "exact" },
     );
-  const { data, count, error } = await applyEnquiryFilters(base, filters)
-    .order("created_at", { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+  const [{ data, count, error }, { data: people }] = await Promise.all([
+    applyEnquirySort(applyEnquiryFilters(base, filters, staff.id), filters.sort).range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
+    supabase.from("profiles").select("id, full_name, email, role").eq("is_active", true).order("full_name"),
+  ]);
+  const team = (people ?? []).filter((p) => p.role !== "editor").map((p) => ({ id: p.id as string, name: (p.full_name || p.email) as string }));
+  const names = new Map(team.map((p) => [p.id, p.name]));
 
-  const rows = (data ?? []) as EnquiryRow[];
+  type Raw = Omit<LeadRow, "country" | "owner"> & { destination_country: string | null; buyer_country: string | null; assigned_to: string | null };
+  const rows: LeadRow[] = ((data ?? []) as Raw[]).map((e) => ({
+    ...e,
+    country: countryName(e.destination_country || e.buyer_country) || "",
+    owner: e.assigned_to ? (names.get(e.assigned_to) ?? "Former staff") : null,
+    tags: (e.tags as string[] | null) ?? [],
+  }));
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   const qs = (extra: Record<string, string | number>) => {
     const p = new URLSearchParams();
@@ -56,6 +49,13 @@ export default async function EnquiriesPage({ searchParams }: PageProps<"/admin/
     return `?${p.toString()}`;
   };
   const exportQs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v) as [string, string][]).toString();
+  const quick = [
+    { label: "My open leads", href: "?owner=me&status=open" },
+    { label: "New", href: "?status=new" },
+    { label: "Overdue follow-ups", href: "?follow=overdue&status=open" },
+    { label: "Unassigned", href: "?owner=none&status=open" },
+    { label: "High priority", href: "?priority=high&status=open" },
+  ];
 
   return (
     <>
@@ -63,100 +63,114 @@ export default async function EnquiriesPage({ searchParams }: PageProps<"/admin/
         title="Enquiries"
         description={`${count ?? 0} matching enquir${count === 1 ? "y" : "ies"}. Spam is hidden unless you filter for it.`}
         actions={
-          <a href={`/admin/enquiries/export${exportQs ? `?${exportQs}` : ""}`} className={adminButton("secondary")}>
-            Export CSV
-          </a>
+          <>
+            <a href={`/admin/enquiries/export${exportQs ? `?${exportQs}` : ""}`} className={adminButton("secondary")}>
+              Export CSV
+            </a>
+            <Link href="/admin/enquiries/new" className={adminButton("primary")}>
+              + Add lead
+            </Link>
+          </>
         }
       />
 
-      <form method="get" className="mb-6 grid gap-3 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-6">
-        <Input name="q" defaultValue={filters.q} placeholder="Search name, email, ref, product…" className="lg:col-span-2" aria-label="Search" />
+      <div className="mb-3 flex flex-wrap gap-2">
+        {quick.map((q) => (
+          <Link key={q.label} href={q.href} className="rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink-soft hover:border-ink/40 hover:text-ink">
+            {q.label}
+          </Link>
+        ))}
+        {Object.values(filters).some(Boolean) && (
+          <Link href="/admin/enquiries" className="rounded-full px-3 py-1 text-xs text-accent hover:underline">
+            Clear filters
+          </Link>
+        )}
+      </div>
+
+      <form method="get" className="mb-6 grid gap-3 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Input name="q" defaultValue={filters.q} placeholder="Search name, email, phone, ref, product…" className="sm:col-span-2" aria-label="Search" />
+        <Select name="status" defaultValue={filters.status} aria-label="Stage">
+          <option value="">All stages (excl. spam)</option>
+          <option value="open">Open (new, contacted, quoted)</option>
+          {LEAD_STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </Select>
         <Select name="type" defaultValue={filters.type} aria-label="Type">
           <option value="">All types</option>
           <option value="rfq">RFQ</option>
           <option value="distributor">Distributor</option>
           <option value="contact">Contact</option>
         </Select>
-        <Select name="status" defaultValue={filters.status} aria-label="Status">
-          <option value="">All (excl. spam)</option>
-          {["new", "contacted", "quoted", "won", "lost", "spam"].map((s) => (
-            <option key={s} value={s}>
-              {s}
+        <Select name="priority" defaultValue={filters.priority} aria-label="Priority">
+          <option value="">Any priority</option>
+          {PRIORITIES.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
             </option>
           ))}
         </Select>
-        <Input type="date" name="from" defaultValue={filters.from} aria-label="From date" />
-        <div className="flex gap-2">
-          <Input type="date" name="to" defaultValue={filters.to} aria-label="To date" />
-          <button type="submit" className={adminButton("primary")}>
-            Filter
-          </button>
-        </div>
+        <Select name="owner" defaultValue={filters.owner} aria-label="Owner">
+          <option value="">Anyone</option>
+          <option value="me">Assigned to me</option>
+          <option value="none">Unassigned</option>
+          {team.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </Select>
+        <Select name="source" defaultValue={filters.source} aria-label="Source">
+          <option value="">Any source</option>
+          {SOURCES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </Select>
+        <Select name="follow" defaultValue={filters.follow} aria-label="Follow-up">
+          <option value="">Any follow-up</option>
+          <option value="overdue">Overdue</option>
+          <option value="today">Due today</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="none">None set</option>
+        </Select>
+        <Input type="date" name="from" defaultValue={filters.from} aria-label="Received from" />
+        <Input type="date" name="to" defaultValue={filters.to} aria-label="Received to" />
+        <Select name="sort" defaultValue={filters.sort} aria-label="Sort">
+          <option value="">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="activity">Recent activity</option>
+          <option value="follow_up">Follow-up date</option>
+          <option value="value">Highest value</option>
+        </Select>
+        {filters.tag && <input type="hidden" name="tag" value={filters.tag} />}
+        <button type="submit" className={adminButton("primary")}>
+          Apply filters
+        </button>
       </form>
 
       {error && <p className="mb-4 rounded-lg bg-danger-soft p-3 text-sm text-danger">{error.message}</p>}
+      {filters.tag && (
+        <p className="mb-3 text-sm text-muted">
+          Tagged <strong className="text-ink">#{filters.tag}</strong> ·{" "}
+          <Link href={qs({ tag: "" })} className="text-accent hover:underline">
+            remove
+          </Link>
+        </p>
+      )}
 
-      <Table>
-        <thead>
-          <tr>
-            <th>Ref / received</th>
-            <th>From</th>
-            <th>Requirement</th>
-            <th>Country</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((e) => (
-            <tr key={e.id} className="hover:bg-paper">
-              <td className="whitespace-nowrap">
-                <Link href={`/admin/enquiries/${e.id}`} className="font-mono text-xs font-medium hover:underline">
-                  {e.reference}
-                </Link>
-                <span className="block text-xs text-muted">{formatDateTime(e.created_at)}</span>
-              </td>
-              <td>
-                <Link href={`/admin/enquiries/${e.id}`} className="font-medium hover:underline">
-                  {e.name}
-                </Link>
-                <span className="block text-xs text-muted">{e.company || e.email}</span>
-              </td>
-              <td>
-                <span className="text-xs uppercase tracking-wide text-muted">{e.type}</span>
-                <span className="block">
-                  {e.product_name_snapshot ?? "—"}
-                  {e.model_code_snapshot && <span className="font-mono text-xs"> · {e.model_code_snapshot}</span>}
-                </span>
-                {e.quantity && <span className="block text-xs text-muted">{e.quantity} {e.quantity_unit}</span>}
-              </td>
-              <td>{countryName(e.destination_country || e.buyer_country) || "—"}</td>
-              <td className="whitespace-nowrap">
-                <Pill tone={enquiryTone(e.status)}>{e.status}</Pill>
-                {e.notify_error && (
-                  <span className="mt-1 block">
-                    <Pill tone="danger">email failed</Pill>
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
-          {!rows.length && (
-            <tr>
-              <td colSpan={5} className="py-10 text-center text-muted">
-                No enquiries match these filters.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </Table>
+      <LeadsTable rows={rows} staff={team} canDelete={staff.role === "admin"} now={requestTime()} />
 
       {totalPages > 1 && (
         <nav aria-label="Pagination" className="mt-6 flex items-center justify-between text-sm">
-          {page > 1 ? <Link href={qs({ page: page - 1 })} className={adminButton("secondary")}>← Newer</Link> : <span />}
+          {page > 1 ? <Link href={qs({ page: page - 1 })} className={adminButton("secondary")}>← Previous</Link> : <span />}
           <span className="text-muted">
             Page {page} of {totalPages}
           </span>
-          {page < totalPages ? <Link href={qs({ page: page + 1 })} className={adminButton("secondary")}>Older →</Link> : <span />}
+          {page < totalPages ? <Link href={qs({ page: page + 1 })} className={adminButton("secondary")}>Next →</Link> : <span />}
         </nav>
       )}
     </>

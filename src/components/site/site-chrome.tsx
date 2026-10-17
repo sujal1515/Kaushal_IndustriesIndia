@@ -6,10 +6,18 @@ import { JsonLd } from "@/components/ui/primitives";
 import { getSearchIndex, getSettings, listCategories } from "@/lib/data/catalogue";
 import { mediaUrl } from "@/lib/env";
 import { organizationJsonLd } from "@/lib/seo";
+import { getPageContent, isPreview } from "@/lib/cms/content";
+import { PreviewBanner } from "@/components/site/preview-banner";
 
 /** Public-site shell: skip link, header, main, footer, consent banner and Organization schema. */
 export async function SiteChrome({ children }: { children: React.ReactNode }) {
-  const [categories, settings, searchIndex] = await Promise.all([listCategories(), getSettings(), getSearchIndex()]);
+  const [categories, settings, searchIndex, content, preview] = await Promise.all([
+    listCategories(),
+    getSettings(),
+    getSearchIndex(),
+    getPageContent("global"),
+    isPreview(),
+  ]);
   const navCategories = categories.map(({ slug, name, description, product_count, image_path }) => ({
     slug,
     name,
@@ -30,7 +38,8 @@ export async function SiteChrome({ children }: { children: React.ReactNode }) {
       <main id="main" tabIndex={-1} className="outline-none">
         {children}
       </main>
-      <Footer categories={navCategories} settings={settings} />
+      <Footer categories={navCategories} settings={settings} content={content} />
+      {preview && <PreviewBanner />}
       <ConsentBanner />
       <SmoothScroll />
       <JsonLd data={organizationJsonLd(settings)} />

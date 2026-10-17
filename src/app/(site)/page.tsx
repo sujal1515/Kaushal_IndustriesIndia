@@ -2,12 +2,10 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
-import type { Metadata } from "next";
 import { getCatalogueStats, listApplications, listCategories } from "@/lib/data/catalogue";
 import { mediaUrl } from "@/lib/env";
-import { exportRegions } from "@/lib/content";
-import { site } from "@/lib/site";
-import { pageMetadata } from "@/lib/seo";
+import { cmsMetadata, getPageContent } from "@/lib/cms/content";
+import { fill } from "@/lib/cms/schema";
 import { ButtonLink } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/primitives";
 import { LargeLinkLabel, Section, SectionTop } from "@/components/ui/system";
@@ -19,32 +17,27 @@ import { QualityExport } from "@/components/site/quality-export";
 import { OrderSteps } from "@/components/site/order-steps";
 import { Marquee } from "@/components/motion/marquee";
 
-export const metadata: Metadata = {
-  ...pageMetadata({
-    title: `${site.name} — Diesel Engines, Generating Sets & Pumps | Agra, India`,
-    description: site.description,
-    path: "/",
-    image: "/images/products/high-speed-air-cooled-single.png",
-  }),
-  title: { absolute: `${site.name} — Diesel Engines, Generating Sets & Pumps | Agra, India` },
-};
-
-const STEPS = [
-  { t: "Choose a product", b: "Browse a family, compare models in the spec table, or use the model finder to filter by power." },
-  { t: "Send your requirement", b: "Press “Request a quote” — the product is filled in. Add quantity, application, destination and timeline." },
-  { t: "Receive a quotation", b: "Our sales team reviews your enquiry and replies by email with pricing, lead time and shipping options." },
-];
+export const generateMetadata = () =>
+  cmsMetadata("home", "/", { image: "/images/products/high-speed-air-cooled-single.png", absoluteTitle: true });
 
 const delay = (s: number) => ({ "--d": `${s}s` }) as React.CSSProperties;
 
 export default async function HomePage() {
-  const [categories, applications, stats] = await Promise.all([listCategories(), listApplications(), getCatalogueStats()]);
-  const proof = [
-    { count: 1964, from: 1900, suffix: "", label: "First manufacturing unit, Agra" },
-    { count: 60, from: 0, suffix: "+", label: "Countries supplied" },
-    { count: stats.modelCount, from: 0, suffix: "", label: "Published engine models" },
-    { text: "ISO 9001:2015", label: "Quality management system" },
-  ];
+  const [categories, applications, stats, home, site] = await Promise.all([
+    listCategories(),
+    listApplications(),
+    getCatalogueStats(),
+    getPageContent("home"),
+    getPageContent("global"),
+  ]);
+  // Figures: plain numbers (optionally with "+") count up; anything else is shown as written.
+  const proof = home.proof.items.map((p) => {
+    const value = fill(p.value, { models: stats.modelCount });
+    const n = /^(\d+)(\+?)$/.exec(value.trim());
+    if (!n) return { text: value, label: p.label };
+    const count = Number(n[1]);
+    return { count, from: count >= 1900 && count <= 2100 ? 1900 : 0, suffix: n[2], label: p.label };
+  });
   const lines = categories.map((c) => {
     // Clean, upscaled cut-outs prepared for the hero (scripts/prepare-hero-images.py); any other
     // category falls back to its catalogue photo.
@@ -67,17 +60,17 @@ export default async function HomePage() {
         <section className="home-hero" data-hero-parallax>
           <div className="hh-sub hh-left">
             <p className="eyebrow">
-              <Reveal delay={0.05}>Manufacturer &amp; exporter · Agra, India</Reveal>
+              <Reveal delay={0.05}>{home.hero.eyebrow}</Reveal>
             </p>
             {/* Two-part headline: the product statement, then the provenance set large */}
             <h1 className="flex flex-col gap-5">
               <span className="h3 block">
-                <Reveal delay={0.15}>Diesel engines, generating sets and pumps</Reveal>
+                <Reveal delay={0.15}>{home.hero.kicker}</Reveal>
               </span>
               <span className="sr-only"> — </span>
               <span className="hh-display block">
-                <Reveal delay={0.28}>made in Agra </Reveal>
-                <Reveal delay={0.38}>since 1964.</Reveal>
+                <Reveal delay={0.28}>{home.hero.display1} </Reveal>
+                <Reveal delay={0.38}>{home.hero.display2}</Reveal>
               </span>
             </h1>
           </div>
@@ -87,30 +80,26 @@ export default async function HomePage() {
           <div className="hh-sub hh-right">
             <div aria-hidden className="hero-panel-bg" />
             <div className="fade-up" style={delay(0.55)}>
-              <ShowcaseRoller label="Product range" />
+              <ShowcaseRoller label={home.hero.rangeLabel} />
             </div>
             <div className="hh-right-foot flex flex-col gap-8">
               <p className="lead max-w-[30rem]">
-                <Reveal delay={0.62}>Stationary engines, pumping sets, gensets and castings, supplied to buyers in more than 60 countries.</Reveal>
+                <Reveal delay={0.62}>{home.hero.lead}</Reveal>
               </p>
               <dl className="fade-up grid grid-cols-3 gap-4 border-t border-white/20" style={delay(0.74)}>
-                {[
-                  { v: "3.5–28", u: "bhp", l: "Rated power" },
-                  { v: "850–1600", u: "rpm", l: "Speed" },
-                  { v: "Air & water", u: "", l: "Cooling" },
-                ].map((s) => (
-                  <div key={s.l} className="min-w-0 pt-4">
-                    <dt className="font-mono text-[0.8125rem] font-medium uppercase leading-snug text-white/75">{s.l}</dt>
+                {home.hero.specs.map((s) => (
+                  <div key={s.label} className="min-w-0 pt-4">
+                    <dt className="font-mono text-[0.8125rem] font-medium uppercase leading-snug text-white/75">{s.label}</dt>
                     <dd className="hh-spec mt-1.5 flex flex-wrap items-baseline gap-x-1 font-semibold leading-tight tracking-[-0.01em]">
-                      <span className="whitespace-nowrap">{s.v}</span>
-                      {s.u && <span className="text-[0.875rem] font-medium text-white/75">{s.u}</span>}
+                      <span className="whitespace-nowrap">{s.value}</span>
+                      {s.unit && <span className="text-[0.875rem] font-medium text-white/75">{s.unit}</span>}
                     </dd>
                   </div>
                 ))}
               </dl>
               <div className="fade-up flex flex-wrap items-center gap-x-8 gap-y-4" style={delay(0.84)}>
                 <ButtonLink href="/products" variant="inverse" size="lg">
-                  Explore products <ArrowRight size={18} />
+                  {home.hero.primaryCta} <ArrowRight size={18} />
                 </ButtonLink>
                 <TrackedLink
                   href="/request-a-quote"
@@ -118,7 +107,7 @@ export default async function HomePage() {
                   params={{ location: "home_hero" }}
                   className="group inline-flex items-center gap-2.5 text-[1.125rem] font-medium tracking-[-0.02rem] text-white"
                 >
-                  <span className="u-link">Request a quote</span>
+                  <span className="u-link">{home.hero.secondaryCta}</span>
                   <ArrowRight size={18} className="transition-transform duration-500 ease-[var(--ease-expo)] group-hover:translate-x-1" />
                 </TrackedLink>
               </div>
@@ -150,9 +139,9 @@ export default async function HomePage() {
       </section>
 
       {/* ============================ Categories ============================ */}
-      <Section label="Product range" rule={false}>
+      <Section label={home.range.label} rule={false}>
         <h2 className="h2 max-w-[48rem]" data-split>
-          Six product lines, one manufacturer.
+          {home.range.title}
         </h2>
         <div className="content-wrapper">
           <ul className="start-grid" data-rise>
@@ -184,10 +173,10 @@ export default async function HomePage() {
           <div className="content-aside">
             <div className="fixed-element">
               <p className="lead" data-reveal>
-                From the engine to the pump, alternator, mill and the castings inside them.
+                {home.range.lead}
               </p>
               <Link href="/products" className="large-link">
-                <LargeLinkLabel>All products</LargeLinkLabel>
+                <LargeLinkLabel>{home.range.linkLabel}</LargeLinkLabel>
               </Link>
             </div>
           </div>
@@ -195,29 +184,19 @@ export default async function HomePage() {
       </Section>
 
       {/* ============================ Marquee ============================ */}
-      <Marquee
-        items={[
-          "Diesel engines",
-          "Generating sets",
-          "Centrifugal pumps",
-          "Agricultural machinery",
-          "Grey & SG iron castings",
-          "Spare parts",
-          "Exported to 60+ countries",
-        ]}
-      />
+      <Marquee items={home.marquee.items} />
 
       {/* ============================ Applications ============================ */}
       <section className="section" aria-labelledby="h-applications">
         <div className="padding-global">
           <div className="section-rule flex flex-col items-center gap-24 max-[479px]:gap-14">
-            <SectionTop label="Industries served" className="justify-center" />
+            <SectionTop label={home.industries.label} className="justify-center" />
             <div className="flex flex-col items-center gap-6 text-center">
               <h2 id="h-applications" className="h2 max-w-[48rem]" data-split>
-                Built for the field, the farm and the site.
+                {home.industries.title}
               </h2>
               <p className="lead max-w-[32rem] text-muted" data-reveal>
-                Find the right engine, set or machine for the job it will do.
+                {home.industries.lead}
               </p>
             </div>
           </div>
@@ -230,15 +209,15 @@ export default async function HomePage() {
       </section>
 
       {/* ============================ Quality + Export ============================ */}
-      <QualityExport regions={exportRegions} />
+      <QualityExport regions={site.lists.exportRegions} quality={home.quality} exportBand={home.export} />
 
       {/* ============================ How to order ============================ */}
-      <Section label="How to order">
+      <Section label={home.order.label}>
         <h2 className="h2 max-w-[48rem]" data-split>
-          From model to quotation in three steps.
+          {home.order.title}
         </h2>
         <div className="mt-16">
-          <OrderSteps steps={STEPS} />
+          <OrderSteps steps={home.order.steps.map((x) => ({ t: x.title, b: x.body }))} />
         </div>
       </Section>
     </>

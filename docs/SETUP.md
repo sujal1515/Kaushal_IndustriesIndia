@@ -20,7 +20,12 @@ Checks: `npm run typecheck`, `npm run lint`, `npm run build`.
    - `supabase/migrations/20261004000100_schema.sql`
    - `supabase/migrations/20261004000200_rls.sql`
    - `supabase/migrations/20261004000300_storage.sql`
-3. Load the catalogue: run `supabase/seed.sql`. Regenerate it after editing `src/lib/data/seed.ts` with `npm run db:seed-sql`. The seed is idempotent.
+   - `supabase/migrations/20261017000100_cms_media_crm.sql` — page content (CMS), media library, lead management
+3. Load the data, in this order:
+   - `supabase/seed.sql` — the catalogue. Regenerate after editing `src/lib/data/seed.ts` with `npm run db:seed-sql`.
+   - `supabase/seed-cms.sql` — every page's current content, published. Regenerate after changing `src/lib/cms/pages.ts` with `npm run db:seed-cms`.
+
+   Both seeds are idempotent and never overwrite rows that already exist. `npm run test:db` runs every migration and seed on a local Postgres (PGlite) and checks the access rules.
 4. **Auth settings**:
    - Turn **off** "Allow new users to sign up". Access is invite-only.
    - Site URL: `https://www.kia-india.com`. Redirect URLs: add `https://www.kia-india.com/auth/confirm` and your preview domain.

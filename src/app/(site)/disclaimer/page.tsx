@@ -1,18 +1,8 @@
-import type { Metadata } from "next";
-import { disclaimer } from "@/lib/content";
-import { pageMetadata } from "@/lib/seo";
-import { LegalPage } from "@/components/site/legal-page";
+import { cmsMetadata } from "@/lib/cms/content";
+import { CmsLegalPage } from "@/components/site/legal-page";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Disclaimer",
-  description: "Disclaimer for information and specifications published on the Kaushal Industries website.",
-  path: "/disclaimer",
-});
+export const generateMetadata = () => cmsMetadata("disclaimer", "/disclaimer");
 
-export default function DisclaimerPage() {
-  return (
-    <LegalPage title="Disclaimer" path="/disclaimer" updated="October 2026">
-      <p>{disclaimer}</p>
-    </LegalPage>
-  );
+export default function Page() {
+  return <CmsLegalPage pageKey="disclaimer" path="/disclaimer" />;
 }

@@ -5,6 +5,7 @@ import { LargeLinkLabel, SectionTop } from "@/components/ui/system";
 import { Logo } from "./logo";
 import { TrackedAnchor, TrackedLink } from "./tracked";
 import { CookieSettingsButton } from "./consent";
+import type { PageContent } from "@/lib/cms/pages";
 
 const company = [
   { label: "About Kaushal", href: "/about" },
@@ -22,9 +23,11 @@ const company = [
 export function Footer({
   categories,
   settings,
+  content,
 }: {
   categories: { slug: string; name: string }[];
   settings: SiteSettings;
+  content: PageContent<"global">;
 }) {
   const year = new Date().getFullYear();
   return (
@@ -32,15 +35,15 @@ export function Footer({
       <section className="section no-print" aria-label="Request for quotation" data-motion-global>
         <div className="padding-global">
           <div className="section-rule">
-            <SectionTop label="Request for quotation" />
+            <SectionTop label={content.cta.label} />
             <div className="section-inner grid gap-10 lg:grid-cols-[3fr_2fr] lg:items-end lg:gap-24">
               <p className="h2 max-w-[48rem]" data-split>
-                Tell us the model, quantity and destination.
+                {content.cta.title}
               </p>
               <div className="flex flex-col items-start gap-10" data-reveal>
-                <p className="lead text-accent">We&apos;ll reply with a quotation.</p>
+                <p className="lead text-accent">{content.cta.lead}</p>
                 <TrackedLink href="/request-a-quote" event="quote_start" params={{ location: "footer" }} className="large-link">
-                  <LargeLinkLabel>Request a quote</LargeLinkLabel>
+                  <LargeLinkLabel>{content.cta.button}</LargeLinkLabel>
                 </TrackedLink>
               </div>
             </div>
@@ -53,7 +56,7 @@ export function Footer({
           <div data-grid-draw className="mt-24 grid gap-10 border-t border-line pb-20 pt-20 max-[991px]:grid-cols-2 max-[991px]:gap-12 max-[479px]:mt-16 max-[479px]:grid-cols-1 max-[479px]:pt-14 min-[992px]:grid-cols-4">
             <div className="flex flex-col items-start gap-8">
               <Logo />
-              <p className="max-w-[22rem] text-[1rem] leading-relaxed text-ink/60">{site.description}</p>
+              <p className="max-w-[22rem] text-[1rem] leading-relaxed text-ink/60">{content.footer.description}</p>
             </div>
 
             <div className="flex flex-col items-start gap-8">

@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import { getCatalogue, getSettings, listApplications, listProducts } from "@/lib/data/catalogue";
 import { countries } from "@/lib/enquiry/options";
-import { pageMetadata } from "@/lib/seo";
+import { cmsMetadata, getPageContent } from "@/lib/cms/content";
+import { fill } from "@/lib/cms/schema";
 import { telHref, whatsappHref } from "@/lib/site";
 import { PageHero } from "@/components/ui/primitives";
 import { Section } from "@/components/ui/system";
@@ -9,22 +9,18 @@ import { Clock, Mail, Phone, WhatsApp } from "@/components/ui/icons";
 import { EnquiryForm, type FormProduct } from "@/components/forms/enquiry-form";
 import { TrackedAnchor } from "@/components/site/tracked";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Request a Quote",
-  description:
-    "Request a quotation for Kaushal diesel engines, generating sets, pumps, agricultural machinery, castings or spare parts. Tell us the product, quantity, destination and timeline.",
-  path: "/request-a-quote",
-});
+export const generateMetadata = () => cmsMetadata("request-a-quote", "/request-a-quote");
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export default async function RequestQuotePage({ searchParams }: PageProps<"/request-a-quote">) {
   const sp = await searchParams;
-  const [products, applications, catalogue, settings] = await Promise.all([
+  const [products, applications, catalogue, settings, c] = await Promise.all([
     listProducts(),
     listApplications(),
     getCatalogue(),
     getSettings(),
+    getPageContent("request-a-quote"),
   ]);
 
   const formProducts: FormProduct[] = products.map((p) => ({
@@ -46,9 +42,9 @@ export default async function RequestQuotePage({ searchParams }: PageProps<"/req
   return (
     <>
       <PageHero
-        eyebrow="Request for quotation"
-        title={preselected ? `Quote for the ${preselected.name}` : "Request a quote"}
-        lead="Tell us what you need, how many, and where it's going. We'll reply with pricing, lead time and shipping options."
+        eyebrow={c.hero.eyebrow}
+        title={preselected ? fill(c.hero.titleWithProduct, { product: preselected.name }) : c.hero.title}
+        lead={c.hero.lead}
         crumbs={[{ label: "Request a quote", href: "/request-a-quote" }]}
       >
         <div className="flex flex-col gap-6">
@@ -59,7 +55,7 @@ export default async function RequestQuotePage({ searchParams }: PageProps<"/req
           )}
           <ul className="border-b border-white/25 text-[1.125rem] font-medium">
             <li className="flex items-center gap-4 border-t border-white/25 py-3.5 text-white/80">
-              <Clock size={20} className="shrink-0 text-sky" /> Reply by email, usually within one business day
+              <Clock size={20} className="shrink-0 text-sky" /> {c.hero.replyNote}
             </li>
             <li className="border-t border-white/25">
               <TrackedAnchor
@@ -80,7 +76,7 @@ export default async function RequestQuotePage({ searchParams }: PageProps<"/req
                 params={{ method: "whatsapp", location: "rfq_page" }}
                 className="group flex items-center gap-4 py-3.5"
               >
-                <WhatsApp size={20} className="shrink-0 text-sky" /> <span className="u-link">WhatsApp us</span>
+                <WhatsApp size={20} className="shrink-0 text-sky" /> <span className="u-link">{c.hero.whatsappLabel}</span>
               </TrackedAnchor>
             </li>
             <li className="border-t border-white/25">

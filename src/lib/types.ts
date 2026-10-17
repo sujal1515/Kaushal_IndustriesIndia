@@ -199,6 +199,14 @@ export interface Enquiry {
   ack_sent_at: string | null;
   ack_error: string | null;
   assigned_to: string | null;
+  priority: "low" | "normal" | "high" | "urgent";
+  follow_up_at: string | null;
+  estimated_value: number | null;
+  currency: string;
+  tags: string[];
+  source: string;
+  lost_reason: string | null;
+  last_activity_at: string;
   created_at: string;
   updated_at: string;
 }

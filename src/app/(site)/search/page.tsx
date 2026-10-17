@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { searchCatalogue } from "@/lib/data/catalogue";
+import { getPageContent } from "@/lib/cms/content";
 import { PageHero } from "@/components/ui/primitives";
 import { Section } from "@/components/ui/system";
 import { Search } from "@/components/ui/icons";
@@ -17,11 +18,11 @@ export const metadata: Metadata = {
 export default async function SearchPage({ searchParams }: PageProps<"/search">) {
   const sp = await searchParams;
   const q = (Array.isArray(sp.q) ? sp.q[0] : sp.q)?.trim().slice(0, 100) ?? "";
-  const hits = q ? await searchCatalogue(q) : [];
+  const [hits, { hero }] = await Promise.all([q ? searchCatalogue(q) : Promise.resolve([]), getPageContent("search")]);
 
   return (
     <>
-      <PageHero eyebrow="Search" title="Find a product or model." crumbs={[{ label: "Search", href: "/search" }]}>
+      <PageHero eyebrow={hero.eyebrow} title={hero.title} crumbs={[{ label: "Search", href: "/search" }]}>
         <form action="/search" method="get" role="search">
           <label htmlFor="q" className="sr-only">
             Search by product, application or model code
@@ -34,7 +35,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
               type="search"
               defaultValue={q}
               autoFocus
-              placeholder="Try “EF1A”, “water cooled” or “irrigation”"
+              placeholder={hero.placeholder}
               className="form-input !border-white/40 !pl-9 !text-[1.25rem] !text-white placeholder:!text-white/60 focus:!border-white"
             />
           </div>

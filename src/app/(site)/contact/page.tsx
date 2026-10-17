@@ -1,7 +1,6 @@
-import type { Metadata } from "next";
 import { getSettings } from "@/lib/data/catalogue";
+import { cmsMetadata, getPageContent } from "@/lib/cms/content";
 import { countries } from "@/lib/enquiry/options";
-import { pageMetadata } from "@/lib/seo";
 import { site, telHref, whatsappHref } from "@/lib/site";
 import { PageHero } from "@/components/ui/primitives";
 import { Section } from "@/components/ui/system";
@@ -10,15 +9,10 @@ import { EnquiryForm } from "@/components/forms/enquiry-form";
 import { MapEmbed } from "@/components/site/map-embed";
 import { TrackedAnchor } from "@/components/site/tracked";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Contact Kaushal Industries — Agra, India",
-  description:
-    "Contact Kaushal Industries, 12/55 Nagla Balchand, Nunhai, Agra 282006, India. Call, WhatsApp or email our sales team, or send us a message.",
-  path: "/contact",
-});
+export const generateMetadata = () => cmsMetadata("contact", "/contact");
 
 export default async function ContactPage() {
-  const settings = await getSettings();
+  const [settings, c] = await Promise.all([getSettings(), getPageContent("contact")]);
   const channels = [
     ...settings.phones.map((p) => ({ icon: Phone, label: "Call", value: p, href: telHref(p), method: "phone", external: false })),
     { icon: WhatsApp, label: "WhatsApp", value: settings.whatsapp, href: whatsappHref(settings.whatsapp), method: "whatsapp", external: true },
@@ -29,9 +23,9 @@ export default async function ContactPage() {
     <>
       {/* Contact channels sit in the brand panel, like the reference contact page */}
       <PageHero
-        eyebrow="Contact"
-        title="Talk to our sales team."
-        lead="Call, WhatsApp or email us — or send a message below. For pricing, the quickest route is a request for quotation."
+        eyebrow={c.hero.eyebrow}
+        title={c.hero.title}
+        lead={c.hero.lead}
         crumbs={[{ label: "Contact", href: "/contact" }]}
       >
         <ul className="border-b border-white/25">
@@ -60,9 +54,9 @@ export default async function ContactPage() {
         <div className="grid gap-24 lg:grid-cols-[3fr_2fr]">
           <div>
             <h2 className="h2" data-split>
-              Send a message
+              {c.form.title}
             </h2>
-            <p className="text-regular mt-6 text-muted">General questions, spares, documents or anything else.</p>
+            <p className="text-regular mt-6 text-muted">{c.form.lead}</p>
             <div className="mt-16">
               <EnquiryForm mode="contact" countryList={countries()} />
             </div>
@@ -81,9 +75,9 @@ export default async function ContactPage() {
                     </span>
                   ))}
                 </address>
-                <p className="mt-4 font-mono text-[0.875rem] font-medium uppercase text-muted">Contact: {site.contact.contactPerson}</p>
+                <p className="mt-4 font-mono text-[0.875rem] font-medium uppercase text-muted">{c.address.contactLabel}: {c.address.contactPerson}</p>
               </div>
-              <MapEmbed src={site.contact.mapEmbedUrl} link={site.contact.mapLink} label="Kaushal Industries, Nunhai, Agra" />
+              <MapEmbed src={site.contact.mapEmbedUrl} link={site.contact.mapLink} label={c.address.mapLabel} />
             </div>
           </aside>
         </div>

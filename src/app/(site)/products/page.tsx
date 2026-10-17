@@ -1,37 +1,32 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Metadata } from "next";
 import { listCategories, listProducts } from "@/lib/data/catalogue";
 import { mediaUrl } from "@/lib/env";
-import { pageMetadata } from "@/lib/seo";
+import { cmsMetadata, getPageContent } from "@/lib/cms/content";
+import { fill } from "@/lib/cms/schema";
 import { PageHero } from "@/components/ui/primitives";
 import { LargeLinkLabel, Section } from "@/components/ui/system";
 import { ProductCard } from "@/components/catalogue/product-card";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Products — Diesel Engines, Generating Sets, Pumps & Castings",
-  description:
-    "Browse Kaushal Industries' full range: stationary diesel engines, diesel generating sets, centrifugal water pumps, agricultural machinery, castings and spare parts.",
-  path: "/products",
-});
+export const generateMetadata = () => cmsMetadata("products", "/products");
 
 export default async function ProductsPage() {
-  const [categories, products] = await Promise.all([listCategories(), listProducts()]);
+  const [categories, products, c] = await Promise.all([listCategories(), listProducts(), getPageContent("products")]);
   return (
     <>
       <PageHero
-        eyebrow="Products"
-        title="The complete Kaushal range."
-        lead="Six product lines, each manufactured and tested in-house. Choose a category to compare families and models."
+        eyebrow={c.hero.eyebrow}
+        title={c.hero.title}
+        lead={c.hero.lead}
         crumbs={[{ label: "Products", href: "/products" }]}
       >
         <nav aria-label="Product categories">
           <ul className="border-b border-white/25">
-            {categories.map((c) => (
-              <li key={c.slug} className="border-t border-white/25">
-                <a href={`#${c.slug}`} className="group flex items-baseline justify-between gap-4 py-3 text-[1.125rem] font-medium">
-                  <span className="u-link">{c.name}</span>
-                  <span className="font-mono text-[0.875rem] text-white/75">{c.product_count}</span>
+            {categories.map((cat) => (
+              <li key={cat.slug} className="border-t border-white/25">
+                <a href={`#${cat.slug}`} className="group flex items-baseline justify-between gap-4 py-3 text-[1.125rem] font-medium">
+                  <span className="u-link">{cat.name}</span>
+                  <span className="font-mono text-[0.875rem] text-white/75">{cat.product_count}</span>
                 </a>
               </li>
             ))}
@@ -39,25 +34,25 @@ export default async function ProductsPage() {
         </nav>
       </PageHero>
 
-      {categories.map((c, i) => {
-        const items = products.filter((p) => p.category_id === c.id);
+      {categories.map((cat, i) => {
+        const items = products.filter((p) => p.category_id === cat.id);
         return (
-          <Section key={c.slug} id={c.slug} rule={i > 0} gap="sm" labelledBy={`h-${c.slug}`}>
+          <Section key={cat.slug} id={cat.slug} rule={i > 0} gap="sm" labelledBy={`h-${cat.slug}`}>
             <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:items-end lg:gap-24">
               <div>
                 <div className="product-tile relative mb-8 hidden h-28 w-28 overflow-hidden lg:block">
-                  {c.image_path && <Image src={mediaUrl(c.image_path)!} alt="" fill sizes="112px" className="object-contain p-3" />}
+                  {cat.image_path && <Image src={mediaUrl(cat.image_path)!} alt="" fill sizes="112px" className="object-contain p-3" />}
                 </div>
-                <h2 id={`h-${c.slug}`} className="h2 max-w-[48rem]" data-split>
-                  {c.name}
+                <h2 id={`h-${cat.slug}`} className="h2 max-w-[48rem]" data-split>
+                  {cat.name}
                 </h2>
               </div>
               <div className="flex flex-col items-start gap-8">
                 <p className="lead" data-reveal>
-                  {c.description}
+                  {cat.description}
                 </p>
-                <Link href={`/products/${c.slug}`} className="large-link">
-                  <LargeLinkLabel>View {c.name.toLowerCase()}</LargeLinkLabel>
+                <Link href={`/products/${cat.slug}`} className="large-link">
+                  <LargeLinkLabel>{fill(c.labels.viewCategory, { category: cat.name.toLowerCase() })}</LargeLinkLabel>
                 </Link>
               </div>
             </div>

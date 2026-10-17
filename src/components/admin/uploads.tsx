@@ -15,7 +15,7 @@ const LIMITS: Record<string, { types: string[]; maxMb: number }> = {
 };
 
 /** Uploads straight from the browser to Supabase Storage (RLS-checked), returning the object path. */
-async function uploadFile(bucket: string, folder: string, file: File) {
+export async function uploadFile(bucket: string, folder: string, file: File) {
   const limit = LIMITS[bucket];
   if (limit && !limit.types.includes(file.type)) throw new Error(`File type ${file.type || "unknown"} is not allowed here.`);
   if (limit && file.size > limit.maxMb * 1024 * 1024) throw new Error(`File is larger than ${limit.maxMb} MB.`);

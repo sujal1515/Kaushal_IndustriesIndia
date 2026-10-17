@@ -7,9 +7,9 @@ Below is everything in this build that was migrated, edited or drafted. Where ea
 
 | # | Item | Where in the build | Issue |
 |---|---|---|---|
-| 1 | "ISO 9001:2015 certified" | `src/lib/content.ts` (proofPoints), Home, Quality page | Legacy About page says certification was still "in process"; the hidden Group page says ISO 9001:2008 since 2004. Supply the current certificate (number and validity) or remove the claim. |
-| 2 | "Up to 2 years warranty" | `content.ts` (`warranty`), Quality page | Taken from the legacy home page. Confirm the terms. |
-| 3 | "60+ countries" and the region list | `content.ts`, `site.ts` | From the legacy profile. Confirm. |
+| 1 | "ISO 9001:2015 certified" | Admin → Pages: Home (key figures, quality band), Quality & certifications | Legacy About page says certification was still "in process"; the hidden Group page says ISO 9001:2008 since 2004. Supply the current certificate (number and validity) or remove the claim. |
+| 2 | "Up to 2 years warranty" | Admin → Pages: Quality & certifications (warranty band) | Taken from the legacy home page. Confirm the terms. |
+| 3 | "60+ countries" and the region list | Admin → Pages: Site-wide content (export regions), Home, Export markets | From the legacy profile. Confirm. |
 | 4 | Engine range 3.5–28 bhp | Home hero, FAQ | Calculated from the published spec tables. The legacy profile claims engines up to 84 HP and gensets up to 65 kVA. Confirm the real range. |
 | 5 | High Speed Air Cooled: legacy heading said "1500–1800 RPM, 3.5–15 BHP" | Product page key specs are computed from the model tables (1500–1600 rpm, 3.5–28 bhp) | Confirm which is correct, and whether the 15–28 bhp double-cylinder models belong to this family. |
 | 6 | Slow Speed Air Cooled (15–28 bhp) and Water Cooled Generating Sets | Status **Coming soon** | Supply specifications or set them to Draft. |
@@ -29,4 +29,4 @@ Below is everything in this build that was migrated, edited or drafted. Where ea
 
 ## Still needed from the client
 
-Original high-resolution product, factory, team and testing photos (the legacy images are 278 px), a vector logo, brochures and data sheets, maintenance guides, current certificates, leadership names and bios (the About page section stays hidden until added in `content.ts`), and spec tables for gensets, pumps and agricultural machines.
+Original high-resolution product, factory, team and testing photos (the legacy images are 278 px), a vector logo, brochures and data sheets, maintenance guides, current certificates, leadership names and bios (the About page section stays hidden until added in Admin → Pages → About → Leadership), and spec tables for gensets, pumps and agricultural machines.

@@ -1,8 +1,7 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { listFaqs, listResources } from "@/lib/data/catalogue";
+import { cmsMetadata, getPageContent } from "@/lib/cms/content";
 import { mediaUrl, STORAGE_BUCKETS } from "@/lib/env";
-import { pageMetadata } from "@/lib/seo";
 import { fileExtension, formatBytes } from "@/lib/utils";
 import type { ResourceType } from "@/lib/types";
 import { JsonLd, PageHero, Prose } from "@/components/ui/primitives";
@@ -11,12 +10,7 @@ import { Download, Plus } from "@/components/ui/icons";
 import { CertificateGrid } from "@/components/site/certificate-grid";
 import { TrackedAnchor } from "@/components/site/tracked";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Resources — Brochures, Data Sheets, Certificates & FAQs",
-  description:
-    "Download Kaushal Industries brochures, technical data sheets and certificates, and find answers to common questions about our engines, generating sets and pumps.",
-  path: "/resources",
-});
+export const generateMetadata = () => cmsMetadata("resources", "/resources");
 
 const documentTypes: { type: ResourceType; label: string }[] = [
   { type: "brochure", label: "Brochures" },
@@ -27,7 +21,7 @@ const documentTypes: { type: ResourceType; label: string }[] = [
 ];
 
 export default async function ResourcesPage() {
-  const [resources, faqs] = await Promise.all([listResources(), listFaqs()]);
+  const [resources, faqs, c] = await Promise.all([listResources(), listFaqs(), getPageContent("resources")]);
   const docGroups = documentTypes
     .map((g) => ({ ...g, items: resources.filter((r) => r.type === g.type) }))
     .filter((g) => g.items.length > 0);
@@ -36,14 +30,14 @@ export default async function ResourcesPage() {
   return (
     <>
       <PageHero
-        eyebrow="Resources"
-        title="Documents and answers."
-        lead="Brochures, data sheets, certificates and the questions buyers ask most often."
+        eyebrow={c.hero.eyebrow}
+        title={c.hero.title}
+        lead={c.hero.lead}
         crumbs={[{ label: "Resources", href: "/resources" }]}
       >
         <nav aria-label="Resource sections">
           <ul className="border-b border-white/25">
-            {[...docGroups.map((g) => ({ id: g.type, label: g.label })), { id: "certificates", label: "Certificates & awards" }, { id: "faqs", label: "FAQs" }].map((s) => (
+            {[...docGroups.map((g) => ({ id: g.type, label: g.label })), { id: "certificates", label: c.sections.certificatesNav }, { id: "faqs", label: c.sections.faqsNav }].map((s) => (
               <li key={s.id} className="border-t border-white/25">
                 <a href={`#${s.id}`} className="group flex py-3 text-[1.125rem] font-medium">
                   <span className="u-link">{s.label}</span>
@@ -58,14 +52,11 @@ export default async function ResourcesPage() {
         <Section rule={false} gap="sm">
           <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:items-end lg:gap-24">
             <div className="max-w-[48rem]">
-              <h2 className="h3">Need a brochure or data sheet?</h2>
-              <p className="text-regular mt-6 text-muted">
-                Full specifications for every published model are on each product page — print any page as a spec sheet.
-                For a brochure, ask us and we&apos;ll email it.
-              </p>
+              <h2 className="h3">{c.empty.title}</h2>
+              <p className="text-regular mt-6 text-muted">{c.empty.body}</p>
             </div>
             <Link href="/request-a-quote" className="large-link self-start lg:self-end">
-              <LargeLinkLabel>Request documents</LargeLinkLabel>
+              <LargeLinkLabel>{c.empty.linkLabel}</LargeLinkLabel>
             </Link>
           </div>
         </Section>
@@ -104,9 +95,9 @@ export default async function ResourcesPage() {
       ))}
 
       {evidence.length > 0 && (
-        <Section id="certificates" label="Evidence">
+        <Section id="certificates" label={c.sections.certificatesLabel}>
           <h2 className="h2 max-w-[48rem]" data-split>
-            Certificates &amp; awards.
+            {c.sections.certificatesTitle}
           </h2>
           <div className="mt-16">
             <CertificateGrid items={evidence} />
@@ -115,14 +106,14 @@ export default async function ResourcesPage() {
       )}
 
       {faqs.length > 0 && (
-        <Section id="faqs" label="FAQs">
+        <Section id="faqs" label={c.sections.faqsNav}>
           <div className="grid gap-12 lg:grid-cols-[2fr_3fr] lg:gap-24">
             <div>
               <h2 className="h2" data-split>
-                Questions buyers ask.
+                {c.sections.faqsTitle}
               </h2>
               <p className="text-regular mt-8 text-muted">
-                Can&apos;t find your answer?{" "}
+                {c.sections.faqsPrompt}{" "}
                 <Link href="/contact" className="u-link text-ink">
                   Contact us
                 </Link>

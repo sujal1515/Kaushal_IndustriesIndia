@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CATALOGUE_ROLES, hasRole, requireStaff } from "@/lib/admin/auth";
 import { createSessionClient } from "@/lib/supabase/clients";
 import { formatDate, statusLabel } from "@/lib/utils";
-import { AdminHeader, Pill, Select, Table, adminButton, statusTone } from "@/components/admin/ui";
+import { AdminHeader, Input, Pill, Select, Table, adminButton, statusTone } from "@/components/admin/ui";
 import { NoAccess } from "@/components/admin/no-access";
 
 export const metadata: Metadata = { title: "Products" };
@@ -14,7 +14,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
   const sp = await searchParams;
   const category = typeof sp.category === "string" ? sp.category : "";
   const status = typeof sp.status === "string" ? sp.status : "";
+  const q = (typeof sp.q === "string" ? sp.q : "").trim().slice(0, 80);
 
+  const search = q.replace(/[%,()*]/g, " ");
   const supabase = await createSessionClient();
   const [{ data: categories }, productsRes] = await Promise.all([
     supabase.from("categories").select("id, name").order("sort_order"),
@@ -25,6 +27,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
         .order("sort_order");
       if (/^[0-9a-f-]{36}$/i.test(category)) q = q.eq("category_id", category);
       if (["draft", "published", "coming_soon", "discontinued"].includes(status)) q = q.eq("status", status);
+      if (search) q = q.or(`name.ilike.%${search}%,slug.ilike.%${search}%,subtitle.ilike.%${search}%`);
       return q;
     })(),
   ]);
@@ -43,6 +46,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
       />
       {sp.deleted && <p className="mb-4 rounded-lg bg-accent-soft p-3 text-sm text-accent-strong">Product deleted.</p>}
       <form method="get" className="mb-4 flex flex-wrap gap-2">
+        <Input name="q" defaultValue={q} placeholder="Search products…" aria-label="Search products" className="!w-56" />
         <Select name="category" defaultValue={category} aria-label="Category" className="!w-auto">
           <option value="">All categories</option>
           {(categories ?? []).map((c) => (
