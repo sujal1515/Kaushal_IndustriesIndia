@@ -1,4 +1,5 @@
 /** Lead-management vocabulary shared by the admin screens, actions and exports. */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { EnquiryStatus } from "@/lib/types";
 
 export const LEAD_STATUSES: { value: EnquiryStatus; label: string; hint: string }[] = [
@@ -49,4 +50,12 @@ export function makeReference(now = new Date()) {
 export function formatMoney(value: number | null | undefined, currency = "USD") {
   if (value === null || value === undefined) return null;
   return `${currency} ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value)}`;
+}
+
+/** History note for an owner change, naming the new owner ("Assigned to Priya"). */
+export async function assignmentNote(supabase: SupabaseClient, assignedTo: string | null) {
+  if (!assignedTo) return "Unassigned";
+  const { data } = await supabase.from("profiles").select("full_name, email").eq("id", assignedTo).maybeSingle();
+  const who = data?.full_name || data?.email;
+  return who ? `Assigned to ${who}` : "Assigned";
 }

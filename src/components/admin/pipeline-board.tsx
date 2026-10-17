@@ -82,7 +82,7 @@ export function PipelineBoard({ cards: initial, now }: { cards: BoardCard[]; now
                     <h2 className="text-sm font-semibold">{col.label}</h2>
                     <span className="rounded-full bg-ink/[0.06] px-2 text-xs font-medium text-ink-soft">{list.length}</span>
                   </div>
-                  <p className="text-xs text-muted">{total ? `${formatMoney(total, "USD")} (USD)` : col.hint}</p>
+                  <p className="text-xs text-muted">{total ? `${formatMoney(total, "USD")} in USD leads` : col.hint}</p>
                 </header>
                 <ul className="grid content-start gap-2 p-2">
                   {list.map((c) => {

@@ -8,6 +8,7 @@ import { serverEnv } from "@/lib/env";
 import { absoluteUrl, site } from "@/lib/site";
 import { notificationEmail, sendEmail } from "@/lib/enquiry/email";
 import type { EnquiryStatus } from "@/lib/types";
+import { assignmentNote } from "@/lib/admin/leads";
 
 const STATUSES = ["new", "contacted", "quoted", "won", "lost", "spam"] as const;
 
@@ -39,7 +40,7 @@ export async function updateEnquiry(id: string, _prev: ActionState, formData: Fo
       events.push({ enquiry_id: id, actor_id: staff.id, kind: "status_change", from_status: current.status, to_status: input.status });
     }
     if (current.assigned_to !== assigned) {
-      events.push({ enquiry_id: id, actor_id: staff.id, kind: "assignment", note: assigned ? `Assigned` : "Unassigned" });
+      events.push({ enquiry_id: id, actor_id: staff.id, kind: "assignment", note: await assignmentNote(supabase, assigned) });
     }
     if (input.note) events.push({ enquiry_id: id, actor_id: staff.id, kind: "note", note: input.note });
 

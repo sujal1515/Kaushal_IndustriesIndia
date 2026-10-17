@@ -16,12 +16,20 @@ Checks: `npm run typecheck`, `npm run lint`, `npm run build`.
 ## 2. Supabase
 
 1. Create a project (region close to India, e.g. Mumbai `ap-south-1`).
-2. Run the migrations in order, in the SQL editor or with the Supabase CLI (`supabase db push`):
+2. Create the database. Quickest: put the **Session pooler** connection string (Supabase → Connect, with
+   your database password; write `@` in the password as `%40`) in `.env.local` as `SUPABASE_DB_URL`, then run
+   `npm run db:setup`. It applies any pending migrations (tracked in `public.schema_migrations`) and both
+   seeds; run it again after pulling new migrations. `npm run db:setup -- --status` only reports, and
+   `npm run db:setup -- --admin you@example.com` makes an existing login an administrator.
+
+   Alternatively paste `supabase/setup-all.sql` (every migration and seed in one file) into the SQL editor
+   of a new project, or run the migrations in order with the Supabase CLI (`supabase db push`):
    - `supabase/migrations/20261004000100_schema.sql`
    - `supabase/migrations/20261004000200_rls.sql`
    - `supabase/migrations/20261004000300_storage.sql`
    - `supabase/migrations/20261017000100_cms_media_crm.sql` — page content (CMS), media library, lead management
-3. Load the data, in this order:
+   - `supabase/migrations/20261017000200_audit_skip_bookkeeping.sql` — keeps timestamp-only updates out of the activity log
+3. Load the data (done by `db:setup` and `setup-all.sql`), in this order:
    - `supabase/seed.sql` — the catalogue. Regenerate after editing `src/lib/data/seed.ts` with `npm run db:seed-sql`.
    - `supabase/seed-cms.sql` — every page's current content, published. Regenerate after changing `src/lib/cms/pages.ts` with `npm run db:seed-cms`.
 

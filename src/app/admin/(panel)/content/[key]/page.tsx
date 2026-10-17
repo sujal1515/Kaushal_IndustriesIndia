@@ -31,6 +31,7 @@ export default async function EditPage({ params }: PageProps<"/admin/content/[ke
       .select("id, created_at, note, author:profiles(full_name, email)")
       .eq("key", key)
       .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(25),
     supabase.from("media_assets").select("id, path, file_name, alt_text").order("created_at", { ascending: false }).limit(300),
   ]);

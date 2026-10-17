@@ -36,7 +36,9 @@ await db.exec(`
   grant usage on schema public, auth, storage, extensions to anon, authenticated;
 `);
 
-const migrations = readdirSync(join(root, "supabase/migrations")).filter((f) => f.endsWith(".sql")).sort();
+// --combined runs supabase/setup-all.sql (every migration and seed in one file) instead.
+const combined = process.argv.includes("--combined");
+const migrations = combined ? [] : readdirSync(join(root, "supabase/migrations")).filter((f) => f.endsWith(".sql")).sort();
 for (const f of migrations) {
   try {
     await db.exec(readFileSync(join(root, "supabase/migrations", f), "utf8"));
@@ -45,7 +47,7 @@ for (const f of migrations) {
     check(false, `migration ${f}: ${e.message}`);
   }
 }
-for (const f of ["seed.sql", "seed-cms.sql"]) {
+for (const f of combined ? ["setup-all.sql"] : ["seed.sql", "seed-cms.sql"]) {
   try {
     await db.exec(readFileSync(join(root, "supabase", f), "utf8"));
     check(true, `seed ${f}`);
@@ -151,6 +153,11 @@ const evt = await as(
 check(!evt.error, "sales logs a follow-up event");
 const touched = await db.query("select last_activity_at > created_at as moved from public.enquiries where id = $1", [leadId]);
 check(touched.rows[0]?.moved === true, "logging activity bumps last_activity_at");
+const noise = await db.query("select count(*)::int as n from public.audit_log where table_name = 'enquiries' and row_id = $1", [leadId]);
+check(noise.rows[0]?.n === 0, "activity bump alone is not written to the audit log");
+await as("sales", `update public.enquiries set priority = 'urgent' where id = $1`, [leadId]);
+const real = await db.query("select count(*)::int as n from public.audit_log where table_name = 'enquiries' and row_id = $1", [leadId]);
+check(real.rows[0]?.n === 1, "a real lead change is audited");
 check(
   (await as("sales", `update public.enquiries set currency = 'usd' where id = $1`, [leadId])).error !== null,
   "currency must be an ISO code",

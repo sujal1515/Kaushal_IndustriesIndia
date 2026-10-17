@@ -7,7 +7,7 @@ import { assertRole, ENQUIRY_ROLES, runAction, type ActionState } from "@/lib/ad
 import { sendEmail } from "@/lib/enquiry/email";
 import { serverEnv } from "@/lib/env";
 import { site } from "@/lib/site";
-import { CURRENCIES, makeReference, PRIORITIES, SOURCES, statusLabel } from "@/lib/admin/leads";
+import { assignmentNote, CURRENCIES, makeReference, PRIORITIES, SOURCES, statusLabel } from "@/lib/admin/leads";
 import { istInputToIso } from "@/lib/admin/dates";
 
 const STATUSES = ["new", "contacted", "quoted", "won", "lost", "spam"] as const;
@@ -105,7 +105,8 @@ export async function bulkUpdateLeads(ids: string[], change: Bulk): Promise<Acti
     }
     if (change.assigned_to !== undefined) {
       update.assigned_to = change.assigned_to ? uuid.parse(change.assigned_to) : null;
-      list.forEach((id) => events.push({ enquiry_id: id, kind: "assignment", note: change.assigned_to ? "Assigned" : "Unassigned" }));
+      const note = await assignmentNote(supabase, (update.assigned_to as string | null) ?? null);
+      list.forEach((id) => events.push({ enquiry_id: id, kind: "assignment", note }));
     }
     if (!Object.keys(update).length) throw new Error("Nothing to change.");
     const { error } = await supabase.from("enquiries").update(update).in("id", list);

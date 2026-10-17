@@ -45,6 +45,12 @@ export async function publishPage(key: string, json: string, note?: string): Pro
   return runAction(async () => {
     const { staff, supabase } = await assertRole(CONTENT_ROLES);
     const { key: k, content } = parse(key, json);
+    // First publish of a page: keep what was live (the seeded original) so it can be restored.
+    const { count } = await supabase.from("cms_revisions").select("id", { count: "exact", head: true }).eq("key", key);
+    if (!count) {
+      const { data: live } = await supabase.from("cms_pages").select("content").eq("key", key).maybeSingle();
+      if (live) await supabase.from("cms_revisions").insert({ key, content: live.content, note: "Original version", created_by: staff.id });
+    }
     const { error } = await supabase
       .from("cms_pages")
       .upsert({ key, content, published_at: new Date().toISOString(), published_by: staff.id });

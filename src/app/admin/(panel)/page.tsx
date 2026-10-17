@@ -148,7 +148,7 @@ export default async function DashboardPage() {
               note={change === null ? `${lastMonth} last month` : `${change >= 0 ? "▲" : "▼"} ${Math.abs(change)}% vs last month`}
               href="/admin/enquiries"
             />
-            <Stat label="Open pipeline" value={open.length} note={openUsd ? `${formatMoney(openUsd, "USD")} estimated (USD)` : "Leads not yet won or lost"} href="/admin/enquiries/board" />
+            <Stat label="Open pipeline" value={open.length} note={openUsd ? `${formatMoney(openUsd, "USD")} estimated in USD leads` : "Leads not yet won or lost"} href="/admin/enquiries/board" />
             <Stat label="Win rate" value={winRate === null ? "—" : `${winRate}%`} note={`${won} won · ${lost} lost`} href="/admin/enquiries?status=won" />
             <Stat label="Follow-ups due" value={dueOpen.length} note={overdue.length ? `${overdue.length} overdue` : "Nothing overdue"} href="/admin/enquiries/follow-ups?owner=all" tone={overdue.length ? "danger" : undefined} />
           </div>
