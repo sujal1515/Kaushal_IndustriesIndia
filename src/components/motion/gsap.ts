@@ -3,11 +3,10 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
 import { CustomEase } from "gsap/CustomEase";
 import { useGSAP } from "@gsap/react";
 
-gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, CustomEase, useGSAP);
+gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase, useGSAP);
 
 // The reference design's navigation ease.
 CustomEase.create("main", "0.65, 0.01, 0.05, 0.99");

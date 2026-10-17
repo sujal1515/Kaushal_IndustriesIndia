@@ -15,11 +15,11 @@ export function ArrowLong({ className }: { className?: string }) {
   );
 }
 
-/** Mono label bar opening a section (label scrambles in as it scrolls into view). */
+/** Mono label bar opening a section (the label rises out of a mask as it scrolls into view). */
 export function SectionTop({ label, className }: { label: string; className?: string }) {
   return (
     <div className={cn("top-elements", className)}>
-      <p className="eyebrow" data-scramble>
+      <p className="eyebrow" data-split>
         {label}
       </p>
     </div>

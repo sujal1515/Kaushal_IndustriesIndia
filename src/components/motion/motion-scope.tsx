@@ -9,8 +9,7 @@ import { initGridLines } from "./grid-lines";
  * navigation and reverts cleanly (gsap.context via useGSAP). Hero text animates with CSS at
  * first paint (globals.css .reveal / .fade-up), so it never waits for scripts.
  *
- *   data-split                 heading lines rise out of masks as they come into view
- *   data-scramble              mono labels resolve from scrambled characters
+ *   data-split                 heading and label lines rise out of masks as they come into view
  *   data-rise                  children rise in sequence (grids, lists)
  *   data-stagger="0.08"        children rise in sequence with a custom stagger
  *   data-reveal                element fades up
@@ -40,7 +39,7 @@ export function MotionScope({ children }: { children: ReactNode }) {
       const ease = "expo.out";
       const start = "top 88%";
 
-      /* Headings: lines rise out of masks */
+      /* Headings and section labels: lines rise out of masks */
       q("[data-split]").forEach((el) => {
         const s = SplitText.create(el, {
           type: "lines",
@@ -57,20 +56,6 @@ export function MotionScope({ children }: { children: ReactNode }) {
           },
         });
         splits.push(s);
-      });
-
-      /* Labels: scrambled characters resolve */
-      q("[data-scramble]").forEach((el) => {
-        const s = SplitText.create(el, { type: "words, chars" });
-        splits.push(s);
-        gsap.to(s.words, {
-          duration: 0.9,
-          stagger: 0.012,
-          ease: "none",
-          scrambleText: { text: "{original}", chars: "upperCase", speed: 1.2 },
-          scrollTrigger: { trigger: el, start: "top 95%", once: true },
-          onComplete: () => s.revert(),
-        });
       });
 
       /* Groups rise in sequence */
